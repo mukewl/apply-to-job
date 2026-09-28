@@ -1,0 +1,20 @@
+{
+  "output_root": "D:/Job Applications",
+  "cv_masters": {
+    "europe": "D:/Job Applications/CV/master_cv_france.tex",
+    "india": "D:/Job Applications/CV/master_cv_india.tex"
+  },
+  "contacts_workbook": "D:/Job Applications/Contacts.xlsx",
+  "contacts_sheet": "Contacts",
+  "tracker_workbook": "D:/Job Applications/Job_Tracker.xlsx",
+  "scripts_dir": "D:/Job Applications/.claude/skills/apply-to-job/scripts",
+  "profile": "D:/Job Applications/.claude/skills/apply-to-job/profile.md",
+  "prospecting": {
+    "provider": "explorium-vibe-prospecting",
+    "paid_calls_forbidden": ["export-to-csv", "enrich-prospects"]
+  },
+  "language_screen": {
+    "enabled": true,
+    "apply_only_in": ["english"]
+  }
+}

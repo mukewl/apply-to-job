@@ -1,0 +1,6 @@
+# personal - do not share these two
+profile.md
+config.json
+
+__pycache__/
+*.pyc
