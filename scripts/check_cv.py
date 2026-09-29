@@ -64,6 +64,25 @@ def norm(s):
     return re.sub(r"[^a-z0-9%+]", "", (s or "").lower())
 
 
+def number_core(phrase):
+    """The numeric part of a protected achievement, e.g. '40% CAC reduction' -> '40%'.
+
+    Matching the whole phrase is too brittle: a CV that says "cut CAC by 40%" or
+    "3x+ paid-media ROAS" is keeping the achievement, just phrasing it differently.
+    """
+    m = re.search(r"\d[\d,.]*\s*(?:%|x\+?|M\+?|k\+?|\+)?", phrase or "", re.I)
+    return norm(m.group(0)) if m else norm(phrase)
+
+
+def sentence_initial(word, text):
+    """True if every occurrence of word starts a sentence - a capitalised verb, not a name."""
+    for m in re.finditer(r"\b" + re.escape(word) + r"\b", text):
+        before = text[:m.start()].rstrip()
+        if before and not before.endswith((".", ":", ";", "!", "?")):
+            return False
+    return True
+
+
 def check(tex_path, profile_path=None, master_path=None):
     tex = io.open(tex_path, encoding="utf-8").read()
     body = body_of(tex)
@@ -72,12 +91,21 @@ def check(tex_path, profile_path=None, master_path=None):
 
     # 1. protected numbers
     if cfg["protected_numbers"]:
-        kept = [p for p in cfg["protected_numbers"] if norm(p) in norm(body)]
+        nb = norm(body)
+        kept = [p for p in cfg["protected_numbers"]
+                if norm(p) in nb or number_core(p) in nb]
         if len(kept) < cfg["min_protected"]:
             fails.append("only {} protected number(s) kept, need {}. Present: {}".format(
                 len(kept), cfg["min_protected"], ", ".join(kept) if kept else "none"))
         else:
             print("  ok  protected numbers: {} kept ({})".format(len(kept), ", ".join(kept)))
+        # the rule is about the whole CV, but a summary with no hard number reads generic
+        ns = norm(summary_of(body))
+        in_summary = [p for p in cfg["protected_numbers"]
+                      if norm(p) in ns or number_core(p) in ns]
+        if not in_summary:
+            warns.append("the summary carries no protected number - it is the first thing read, "
+                         "and without one it reads generic")
     else:
         warns.append("no protected numbers found in the profile - skipping that check")
 
@@ -104,7 +132,10 @@ def check(tex_path, profile_path=None, master_path=None):
         stop = {"The", "This", "That", "His", "Her", "Has", "Have", "Owned", "Built", "Runs",
                 "Works", "Tracks", "Global", "MBA", "Four", "Five", "Performance", "Digital",
                 "Lifecycle", "Growth", "Marketing", "Manager", "Content", "Analytics", "Before"}
-        unknown = sorted(t for t in tokens - stop if norm(t) not in norm(master))
+        summary = summary_of(body)
+        nm = norm(master)
+        unknown = sorted(t for t in tokens - stop
+                         if norm(t) not in nm and not sentence_initial(t, summary))
         if unknown:
             fails.append("summary names things absent from the master: " + ", ".join(unknown))
         else:
